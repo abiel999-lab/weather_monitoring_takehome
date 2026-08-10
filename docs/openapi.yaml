@@ -1,0 +1,301 @@
+openapi: 3.1.0
+info:
+  title: Weather Monitoring API
+  version: 1.0.0
+  description: REST API for stations, sensor readings, analytics, AI-assisted anomaly explanation, and grounded weather Q&A.
+servers:
+  - url: http://localhost:8000/api
+security: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: API is healthy
+  /auth/login:
+    post:
+      summary: Login and issue Sanctum token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { description: Authenticated }
+        '422': { description: Invalid credentials }
+  /auth/logout:
+    post:
+      summary: Revoke current token
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Logged out }
+        '401': { description: Unauthenticated }
+  /stations:
+    get:
+      summary: List stations
+      responses:
+        '200':
+          description: Station collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Station' }
+    post:
+      summary: Create station
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StationInput' }
+      responses:
+        '201': { description: Created }
+        '401': { description: Unauthenticated }
+        '422': { description: Validation error }
+  /stations/{station}:
+    parameters:
+      - $ref: '#/components/parameters/StationId'
+    get:
+      summary: Get station
+      responses:
+        '200': { description: Station detail }
+        '404': { description: Not found }
+    put:
+      summary: Update station
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StationInput' }
+      responses:
+        '200': { description: Updated }
+        '401': { description: Unauthenticated }
+        '422': { description: Validation error }
+    delete:
+      summary: Delete station and its readings
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Unauthenticated }
+  /readings:
+    get:
+      summary: List readings
+      parameters:
+        - in: query
+          name: station_id
+          schema: { type: integer }
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200': { description: Paginated reading collection }
+    post:
+      summary: Create reading
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReadingInput' }
+      responses:
+        '201': { description: Created }
+        '401': { description: Unauthenticated }
+        '422': { description: Validation error }
+  /readings/{reading}:
+    parameters:
+      - in: path
+        name: reading
+        required: true
+        schema: { type: integer }
+    get:
+      summary: Get reading
+      responses:
+        '200': { description: Reading detail }
+        '404': { description: Not found }
+    put:
+      summary: Update reading
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReadingInput' }
+      responses:
+        '200': { description: Updated }
+        '401': { description: Unauthenticated }
+    delete:
+      summary: Delete reading
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Unauthenticated }
+  /stations/{station}/daily-averages:
+    parameters:
+      - $ref: '#/components/parameters/StationId'
+      - in: query
+        name: from
+        schema: { type: string, format: date }
+      - in: query
+        name: to
+        schema: { type: string, format: date }
+      - in: query
+        name: days
+        schema: { type: integer, minimum: 1, maximum: 90, default: 7 }
+    get:
+      summary: Daily aggregates for a station
+      responses:
+        '200':
+          description: Daily aggregate collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/DailyAverage' }
+  /analytics/threshold:
+    get:
+      summary: List stations with readings crossing a threshold
+      parameters:
+        - in: query
+          name: metric
+          required: true
+          schema:
+            type: string
+            enum: [temperature_c, humidity_percent, rainfall_mm, wind_speed_mps]
+        - in: query
+          name: operator
+          schema:
+            type: string
+            enum: [gt, gte, lt, lte]
+            default: gt
+        - in: query
+          name: threshold
+          required: true
+          schema: { type: number }
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+      responses:
+        '200': { description: Matching stations }
+        '422': { description: Invalid query parameters }
+  /stations/{station}/ai-insight:
+    parameters:
+      - $ref: '#/components/parameters/StationId'
+      - in: query
+        name: days
+        schema: { type: integer, minimum: 2, maximum: 30, default: 7 }
+    get:
+      summary: Generate anomaly/trend explanation
+      responses:
+        '200':
+          description: AI-assisted insight grounded in current DB data
+  /ai/chat:
+    post:
+      summary: Ask the Weather AI Assistant about actual sensor data
+      description: Builds compact context from PostgreSQL readings and asks the configured LLM provider to answer only from that data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiChatInput'
+      responses:
+        '200':
+          description: Grounded AI answer
+        '422':
+          description: Validation error
+        '429':
+          description: AI rate limit exceeded
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum
+  parameters:
+    StationId:
+      in: path
+      name: station
+      required: true
+      schema: { type: integer }
+  schemas:
+    Station:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string, example: SUB-01 }
+        name: { type: string, example: Surabaya Central }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        elevation_m: { type: [number, 'null'] }
+        region: { type: string }
+        readings_count: { type: integer }
+        last_reading_at: { type: [string, 'null'], format: date-time }
+    StationInput:
+      type: object
+      required: [code, name, latitude, longitude, region]
+      properties:
+        code: { type: string, maxLength: 32, pattern: '^[A-Z0-9-]+$' }
+        name: { type: string, maxLength: 120 }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        elevation_m: { type: [number, 'null'], minimum: -500, maximum: 9000 }
+        region: { type: string, maxLength: 120 }
+    ReadingInput:
+      type: object
+      required: [station_id, recorded_at, temperature_c, humidity_percent, rainfall_mm, wind_speed_mps]
+      properties:
+        station_id: { type: integer }
+        recorded_at: { type: string, format: date-time }
+        temperature_c: { type: number, minimum: -80, maximum: 70 }
+        humidity_percent: { type: number, minimum: 0, maximum: 100 }
+        rainfall_mm: { type: number, minimum: 0, maximum: 2000 }
+        wind_speed_mps: { type: number, minimum: 0, maximum: 150 }
+    AiChatInput:
+      type: object
+      required: [question]
+      properties:
+        question: { type: string, minLength: 3, maxLength: 500 }
+        station_id: { type: [integer, 'null'] }
+        days: { type: integer, minimum: 2, maximum: 30, default: 7 }
+        history:
+          type: array
+          maxItems: 8
+          items:
+            type: object
+            required: [role, content]
+            properties:
+              role: { type: string, enum: [user, assistant] }
+              content: { type: string, maxLength: 800 }
+    DailyAverage:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        avg_temperature_c: { type: number }
+        avg_humidity_percent: { type: number }
+        avg_rainfall_mm: { type: number }
+        total_rainfall_mm: { type: number }
+        avg_wind_speed_mps: { type: number }
+        sample_count: { type: integer }

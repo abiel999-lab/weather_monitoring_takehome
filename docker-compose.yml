@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-weather_monitor}
+      POSTGRES_USER: ${POSTGRES_USER:-weather}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-weather}
+    volumes:
+      - weather_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-weather} -d ${POSTGRES_DB:-weather_monitor}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_NAME: Weather Monitor API
+      APP_ENV: local
+      APP_KEY: ${APP_KEY:-base64:lvaUtKMx8s+6KxjtvVtJSab69wXuXhVuuOiKRtJ+wcU=}
+      APP_DEBUG: "false"
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      APP_TIMEZONE: UTC
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-weather_monitor}
+      DB_USERNAME: ${POSTGRES_USER:-weather}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-weather}
+      CACHE_STORE: database
+      QUEUE_CONNECTION: sync
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      SANCTUM_EXPIRATION: 480
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Demo Reviewer}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-reviewer@example.test}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-ChangeThisLocalOnly123!}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_MODEL: ${AI_MODEL:-mock-weather-narrator}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-15}
+      AI_FALLBACK_TO_MOCK: ${AI_FALLBACK_TO_MOCK:-true}
+      AI_CACHE_TTL_SECONDS: ${AI_CACHE_TTL_SECONDS:-900}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend-test:
+    build:
+      context: ./backend
+      target: test
+    profiles: ["test"]
+    environment:
+      APP_ENV: testing
+      APP_KEY: ${APP_KEY:-base64:lvaUtKMx8s+6KxjtvVtJSab69wXuXhVuuOiKRtJ+wcU=}
+      AI_PROVIDER: mock
+    command: ["php", "artisan", "test"]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api}
+    ports:
+      - "3000:3000"
+
+volumes:
+  weather_postgres_data:

@@ -1,0 +1,30 @@
+# Environment / secrets
+/.env
+/.env.*
+!/.env.example
+/backend/.env
+/backend/.env.*
+!/backend/.env.example
+/frontend/.env
+/frontend/.env.*
+!/frontend/.env.example
+
+# PHP / Laravel
+/backend/vendor/
+/backend/storage/logs/*.log*
+/backend/bootstrap/cache/*.php
+/backend/.phpunit.result.cache
+/backend/coverage/
+
+# Node / Next.js
+/frontend/node_modules/
+/frontend/.next/
+/frontend/out/
+/frontend/npm-debug.log*
+/frontend/yarn-error.log*
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
