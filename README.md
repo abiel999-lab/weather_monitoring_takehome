@@ -2,6 +2,26 @@
 
 Implementasi full-stack untuk studi kasus pemantauan stasiun cuaca. Proyek ini memprioritaskan **ketepatan fungsi, keterbacaan kode, keamanan, pemodelan data yang relevan, dan kemudahan reviewer menjalankan aplikasi**, tanpa menambahkan lapisan arsitektur yang tidak diperlukan.
 
+## Live deployment
+
+Aplikasi telah dideploy dan dapat direview langsung melalui environment production.
+
+| Komponen | Deployment |
+|---|---|
+| Live dashboard | https://weather-monitoring.studioimpactid.com |
+| Backend API | https://weather-monitoring-api.onrender.com |
+| API health check | https://weather-monitoring-api.onrender.com/api/health |
+| Frontend | Hostinger Managed Node.js / Next.js |
+| Backend | Render Docker Web Service |
+| Database | Neon PostgreSQL |
+| AI provider production | Groq — `openai/gpt-oss-20b` |
+
+Environment production menggunakan PostgreSQL managed dan real LLM provider. Fitur Weather AI Q&A mengambil konteks dari data sensor aktual di database, sedangkan Anomaly Explainer menggunakan z-score sebelum hasil statistik dijelaskan oleh LLM.
+
+Read endpoint dapat diakses tanpa autentikasi untuk memudahkan proses review. Endpoint create/update/delete tetap dilindungi Laravel Sanctum bearer token. Credential write-access production tidak disimpan di repository dan dapat diberikan secara terpisah kepada reviewer bila diperlukan.
+
+> Catatan: backend menggunakan free-tier hosting sehingga cold start dapat terjadi setelah periode tidak aktif. Jika request pertama membutuhkan waktu lebih lama, tunggu beberapa saat lalu refresh halaman.
+
 ## Ringkasan teknologi
 
 - **REST API:** Laravel 13 + PHP 8.4.
@@ -30,7 +50,7 @@ Implementasi full-stack untuk studi kasus pemantauan stasiun cuaca. Proyek ini m
 | Seed data | Tiga station Indonesia dan 200+ reading; seed deterministik saat ini menghasilkan 700+ sample. |
 | AI Opsi 2 | Structured database-grounded RAG Weather AI Q&A menggunakan konteks sensor aktual dari PostgreSQL. |
 | AI Opsi 3 | Deteksi anomali statistik menggunakan z-score, lalu LLM menjelaskan hasilnya untuk pengguna non-teknis. |
-| Bonus | Docker Compose, AI caching, rate limiting, retry/timeout, dan graceful provider fallback. |
+| Bonus | Live deployment, Docker Compose, AI caching, rate limiting, retry/timeout, dan graceful provider fallback. |
 
 Secara default repository menggunakan provider AI mock yang deterministik agar reviewer dapat menjalankan seluruh aplikasi tanpa secret. Adapter OpenAI-compatible juga telah diuji menggunakan Groq; untuk mengaktifkan provider asli cukup mengubah environment variable.
 
@@ -466,3 +486,17 @@ Constraint dan versi dependency yang dikunci tersedia pada:
 - `backend/composer.lock`
 - `frontend/package.json`
 - `frontend/package-lock.json`
+
+Live Demo:
+https://weather-monitoring.studioimpactid.com
+
+Backend API:
+https://weather-monitoring-api.onrender.com
+
+Health:
+https://weather-monitoring-api.onrender.com/api/health
+
+Frontend: Hostinger Managed Node.js / Next.js
+Backend: Render Docker Web Service
+Database: Neon PostgreSQL
+AI: Groq â€” openai/gpt-oss-20b
