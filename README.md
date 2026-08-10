@@ -14,7 +14,7 @@ Aplikasi telah dideploy dan dapat direview langsung melalui environment producti
 | Frontend | Hostinger Managed Node.js / Next.js |
 | Backend | Render Docker Web Service |
 | Database | Neon PostgreSQL |
-| AI provider production | Groq � `openai/gpt-oss-20b` |
+| AI provider production | Groq — `openai/gpt-oss-20b` |
 
 Environment production menggunakan PostgreSQL managed dan real LLM provider. Fitur Weather AI Q&A mengambil konteks dari data sensor aktual di database, sedangkan Anomaly Explainer menggunakan z-score sebelum hasil statistik dijelaskan oleh LLM.
 
@@ -444,26 +444,24 @@ Beberapa pengembangan lanjutan yang relevan:
 - Alert policy nyata yang membedakan operational threshold dan anomaly statistik.
 
 ## Struktur repository
-
-```text
 .
-├── backend/                 Laravel API
-│   ├── app/
-│   │   ├── Http/
-│   │   ├── Models/
-│   │   └── Services/
-│   ├── database/
-│   ├── routes/
-│   └── tests/
-├── frontend/                Next.js dashboard
-│   └── src/
-│       ├── app/
-│       ├── components/
-│       └── lib/
-├── docs/openapi.yaml        API contract
-├── docker-compose.yml
-└── .github/workflows/ci.yml
-```
+backend/                 Laravel API
+app/
+Http/
+Models/
+Services/
+database/
+routes/
+tests/
+frontend/                Next.js dashboard
+src/
+app/
+components/
+lib/
+docs/openapi.yaml        API contract
+docker-compose.yml
+github/workflows/ci.yml
+
 
 ## Library open-source yang digunakan
 
